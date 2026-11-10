@@ -27,6 +27,19 @@ footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
 [hidden]{display:none!important}
 /* iOS narrow-viewport QA: allow grid tracks, inputs, and buttons to shrink. */
 @media(max-width:380px){main{padding:22px 12px 48px}.panel{padding:16px 14px}.pressure input{font-size:20px}.btnrow button{flex:1 1 100%}}
+
+/* iOS focus-zoom regression guard: native editable controls >=16px. */
+@media (max-width:740px){
+  input:not([type="checkbox"]):not([type="file"]),select,textarea{font-size:16px;}
+  .row.pressure input[type="number"]{font-size:25px;}
+  input[type="datetime-local"],input[type="date"],input[type="time"]{
+    display:block;box-sizing:border-box;width:100%;min-width:0;min-inline-size:0;
+    max-width:100%;max-inline-size:100%;font-size:16px;
+  }
+  .field,.row,.panel,main{min-width:0;max-width:100%;}
+  #who,#status,footer{overflow-wrap:anywhere;}
+}
+@media(max-width:380px){.row.pressure input[type="number"]{font-size:20px;}}
 </style></head>
 <body><main>
 <header><span>HEALTH TRACKER</span><span class="tag">● СИНТЕТИКА</span></header>
