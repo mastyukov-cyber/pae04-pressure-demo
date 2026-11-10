@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>PAE-04 · Health Tracker QA</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#15243b;background:#f5f7fb;font-size:15px}
+*{box-sizing:border-box}body{margin:0}main{width:min(100%,430px);margin:auto;padding:30px 20px 65px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;color:#2376c9;font-size:13px;font-weight:800;letter-spacing:.04em}
+.tag{background:#e0f3e9;color:#137846;padding:9px 12px;border-radius:12px;font-size:12px;letter-spacing:0}
+h1{margin:0 0 5px;font-size:29px;letter-spacing:-.8px}p.sub{color:#718097;margin:0 0 20px}
+.notice{background:#e5f0ff;color:#275c96;padding:15px;border-radius:13px;font-size:12px;margin:18px 0}
+.notice strong{display:block;margin-bottom:4px;letter-spacing:.03em}
+.panel{background:white;border-radius:21px;padding:19px 17px;box-shadow:0 4px 24px #1a376208;margin-bottom:15px}
+h2{font-size:16px;margin:0 0 15px}label{display:block;font-size:12px;color:#687789;font-weight:600;margin:0 0 7px}
+input{width:100%;border:1px solid #dce4ef;background:#f5f7fa;border-radius:12px;padding:12px;color:#18314b;font:inherit;min-height:46px}
+input:focus{outline:2px solid #85b8f4}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.field{margin-bottom:13px}.pressure input{font-size:25px;font-weight:750}
+button{border:0;background:#2377cf;color:white;padding:14px 16px;border-radius:13px;font:inherit;font-weight:700;cursor:pointer;min-height:46px}
+button.secondary{background:#edf3fb;color:#235d95}button.small{padding:9px 11px;font-size:12px}
+button:disabled{opacity:.55;cursor:wait}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap}#status{border-radius:12px;padding:12px;margin:0 0 15px;white-space:pre-wrap;font-size:13px;background:#e9eff7;color:#344b68}
+#status.error{background:#fff0ed;color:#a2352c}#status.success{background:#e5f6eb;color:#14653a}
+#who{font-size:12px;color:#5b6b82;overflow-wrap:anywhere;margin:0 0 15px}
+#entries{padding-left:18px;color:#344760;font-size:13px}#entries li{margin:9px 0}
+footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
+[hidden]{display:none!important}
+</style></head>
+<body><main>
+<header><span>HEALTH TRACKER</span><span class="tag">● СИНТЕТИКА</span></header>
+<h1>Новое измерение</h1><p class="sub">Давление и пульс · правая рука</p>
+<div class="notice"><strong>PAE-04 · ТЕСТОВАЯ ПЕСОЧНИЦА</strong>Вводите только вымышленные показатели. Никаких реальных медицинских сведений.</div>
+<section class="panel" id="authPanel">
+<h2>Тестовая авторизация Supabase</h2>
+<div class="field"><label for="email">Тестовая почта</label><input id="email" type="email" autocomplete="username" placeholder="Тестовый адрес электронной почты"></div>
+<div class="field"><label for="password">Пароль тестового аккаунта (минимум 8 символов)</label><input id="password" type="password" autocomplete="current-password" minlength="8"></div>
+<div class="btnrow"><button id="login">Войти</button><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="logout" class="secondary" hidden>Выйти</button></div>
+</section>
+<div id="who">Не авторизован. Данные недоступны.</div>
+<div id="status" role="status" aria-live="polite">Для проверки двух пользователей используйте два отдельных тестовых аккаунта.</div>
+<section class="panel" id="formPanel" hidden>
+<h2>Показатели</h2>
+<div class="row pressure">
+<div class="field"><label for="sys">Верхнее · мм рт. ст.</label><input id="sys" type="number" min="70" max="220" required value="120" inputmode="numeric"></div>
+<div class="field"><label for="dia">Нижнее · мм рт. ст.</label><input id="dia" type="number" min="40" max="140" required value="80" inputmode="numeric"></div></div>
+<div class="field"><label for="pulse">Пульс · уд/мин</label><input id="pulse" type="number" min="35" max="200" required value="72" inputmode="numeric"></div>
+<div class="field"><label for="recorded">Дата и время</label><input id="recorded" type="datetime-local" required></div>
+<div class="btnrow"><button id="save">Сохранить синтетическую запись</button><button id="reload" class="secondary">Обновить мои записи</button></div>
+</section>
+<section class="panel" id="historyPanel" hidden><h2>Только мои тестовые записи</h2><ul id="entries"></ul></section>
+<footer>Тестовый веб-прототип. Не подключён к основному Health Tracker. Проверки двух пользователей выполняются только с отдельными тестовыми аккаунтами. Никаких настоящих измерений.</footer>
+</main><script>
+"use strict";
+const API_BASE="https://ulkocxmtnhxkhfgdlupw.supabase.co";
+const PUBLIC_KEY="sb_publishable_Jwj_XMEsqpQ84A0JEaI_eg_Uxju1m1x";
+const TABLE="pae04_qa_pressure_entries";
+const $=id=>document.getElementById(id);
+let session=null;
+function status(msg,kind){const e=$("status");e.textContent=msg;e.className=kind||""}
+function showLogin(){const yes=!!(session&&session.access_token&&session.user);$("login").hidden=yes;$("register").hidden=yes;$("logout").hidden=!yes;$("formPanel").hidden=!yes;$("historyPanel").hidden=!yes;$("who").textContent=yes?"Тестовый аккаунт: "+session.user.email+" · "+session.user.id:"Не авторизован. Данные недоступны.";if(!yes)$("entries").replaceChildren();}
+function storageSet(){if(session)sessionStorage.setItem("pae04_qa_session_v1",JSON.stringify(session));else sessionStorage.removeItem("pae04_qa_session_v1")}
+async function request(path,method,body,protectedRequest){const headers={"apikey":PUBLIC_KEY};if(body!==undefined)headers["Content-Type"]="application/json";if(protectedRequest){if(!session?.access_token)throw Error("Сначала войдите в тестовый аккаунт");headers.Authorization="Bearer "+session.access_token;}
+ const r=await fetch(API_BASE+path,{method:method||"GET",headers,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store",credentials:"omit"});
+ const txt=await r.text();let data;try{data=txt?JSON.parse(txt):null}catch{data=txt}
+ if(!r.ok)throw Error((data&&typeof data==="object"&&(data.msg||data.error_description||data.message||data.error))||("HTTP "+r.status));
+ return data;
+}
+async function refreshIfNeeded(){if(!session)return;const exp=session.expires_at||0;if(Date.now()/1000+90<exp)return;if(!session.refresh_token){session=null;storageSet();showLogin();throw Error("Срок сеанса истёк. Войдите снова.");}
+ const s=await request("/auth/v1/token?grant_type=refresh_token","POST",{refresh_token:session.refresh_token},false);if(!s.access_token)throw Error("Не удалось обновить сеанс");session=s;session.expires_at=Math.floor(Date.now()/1000)+(s.expires_in||3600);storageSet();showLogin();
+}
+async function auth(op){
+ let email=$("email").value.trim();let password=$("password").value;
+ if(!email.includes("@")||password.length<8){status("Укажите тестовую почту и пароль минимум из 8 символов.","error");return;}
+ try{status(op==="register"?"Создаём тестовый аккаунт…":"Входим…");
+ const s=await request(op==="register"?"/auth/v1/signup":"/auth/v1/token?grant_type=password","POST",{email,password},false);
+ $("password").value="";
+ if(s.access_token&&s.user){session=s;session.expires_at=Math.floor(Date.now()/1000)+(s.expires_in||3600);storageSet();showLogin();status("Вход выполнен. Можно сохранить синтетическую запись.","success");await listEntries();}
+ else{status("Регистрация принята. Если включено подтверждение почты, откройте письмо и затем выполните вход.","success");}
+ }catch(e){status("Ошибка авторизации: "+e.message,"error");}
+}
+async function signOut(){const tok=session?.access_token;session=null;storageSet();showLogin();if(tok){try{await fetch(API_BASE+"/auth/v1/logout",{method:"POST",headers:{apikey:PUBLIC_KEY,Authorization:"Bearer "+tok},cache:"no-store",credentials:"omit"});}catch{}}status("Вы вышли из тестового аккаунта.","success")}
+async function listEntries(){
+ try{await refreshIfNeeded();const data=await request("/rest/v1/"+TABLE+"?select=id,recorded_at,systolic,diastolic,pulse&order=recorded_at.desc&limit=30","GET",undefined,true);
+ const ul=$("entries");ul.replaceChildren();for(const e of data||[]){const li=document.createElement("li");li.textContent=new Date(e.recorded_at).toLocaleString("ru-RU")+" — "+e.systolic+"/"+e.diastolic+" · пульс "+e.pulse;ul.append(li)}
+ if(!data?.length){const li=document.createElement("li");li.textContent="У этого аккаунта пока нет записей.";ul.append(li)}
+ status("Записи загружены. Показаны только данные текущего тестового аккаунта.","success");
+ }catch(e){status("Ошибка чтения: "+e.message,"error");}
+}
+async function saveEntry(){
+ try{await refreshIfNeeded();
+ const sys=Number($("sys").value),dia=Number($("dia").value),pulse=Number($("pulse").value),date=$("recorded").value;
+ if(!Number.isInteger(sys)||sys<70||sys>220||!Number.isInteger(dia)||dia<40||dia>140||!Number.isInteger(pulse)||pulse<35||pulse>200||!date)throw Error("Проверьте показатели и дату.");
+ const payload={owner_id:session.user.id,systolic:sys,diastolic:dia,pulse,recorded_at:new Date(date).toISOString(),synthetic_only:true};
+ await request("/rest/v1/"+TABLE,"POST",payload,true);
+ status("Синтетическая запись сохранена.","success");
+ await listEntries();
+ }catch(e){status("Ошибка сохранения: "+e.message,"error")}
+}
+$("register").addEventListener("click",()=>auth("register"));
+$("login").addEventListener("click",()=>auth("login"));
+$("logout").addEventListener("click",signOut);
+$("save").addEventListener("click",saveEntry);
+$("reload").addEventListener("click",listEntries);
+const dt=new Date();dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());$("recorded").value=dt.toISOString().slice(0,16);
+try{session=JSON.parse(sessionStorage.getItem("pae04_qa_session_v1")||"null")}catch{session=null}
+showLogin();
+if(session?.access_token){request("/auth/v1/user","GET",undefined,true).then(u=>{if(u.id===session.user?.id){showLogin();listEntries()}else signOut()}).catch(()=>signOut())}
+</script></body></html>
