@@ -1,0 +1,38 @@
+name: PAE-04 WebKit synthetic viewport QA
+on:
+  pull_request:
+    branches:
+      - sandbox/pae04-ios-responsive-auth-diagnostics-v01
+    paths:
+      - index.html
+      - qa/**
+      - playwright.config.cjs
+      - .github/workflows/pae04-webkit-viewport.yml
+permissions:
+  contents: read
+jobs:
+  webkit-synthetic:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout draft QA branch
+        uses: actions/checkout@v4
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pinned Playwright test runner
+        run: npm install --no-save --no-audit --no-fund @playwright/test@1.65.0
+      - name: Install WebKit in disposable runner
+        run: npx playwright install --with-deps webkit
+      - name: Test five iPhone dimensions (no credentials)
+        run: npx playwright test --reporter=line
+      - name: Upload anonymous failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pae04-synthetic-webkit-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
