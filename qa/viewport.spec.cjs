@@ -67,3 +67,87 @@ for (const [name, width, height] of profiles) {
     }
   });
 }
+
+
+test('PAE-04 password recovery: request email without logging in', async ({ browser }) => {
+  const context=await browser.newContext({viewport:{width:390,height:844},locale:'ru-RU',
+      storageState:{cookies:[],origins:[]}});
+  try{
+    const page=await context.newPage();
+    let sent=false;
+    await page.route('https://ulkocxmtnhxkhfgdlupw.supabase.co/auth/v1/recover?**',async route=>{
+      const request=route.request();
+      const u=new URL(request.url());
+      const payload=request.postDataJSON();
+      sent=request.method()==='POST'&&
+        payload.email==='synthetic.qa@example.test'&&
+        Object.keys(payload).join(',')==='email'&&
+        u.searchParams.get('redirect_to')==='https://mastyukov-cyber.github.io/pae04-pressure-demo/';
+      await route.fulfill({status:200,contentType:'application/json',body:'{}'});
+    });
+    await page.goto('http://127.0.0.1:4173/');
+    await page.getByLabel('Тестовая почта').fill('synthetic.qa@example.test');
+    await page.getByRole('button',{name:'Забыли пароль?'}).click();
+    await expect(page.locator('#status')).toContainText('Если тестовый аккаунт существует');
+    expect(sent).toBe(true);
+    await expect(page.locator('#recoveryPanel')).toBeHidden();
+  }finally{await context.close()}
+});
+
+test('PAE-04 password recovery: valid synthetic link changes password only on user action',async ({browser})=>{
+  const context=await browser.newContext({viewport:{width:390,height:844},
+    storageState:{cookies:[],origins:[]}});
+  try{
+    const page=await context.newPage();
+    let validationCalls=0,updateCalls=0,validPayload=false;
+    await page.route('https://ulkocxmtnhxkhfgdlupw.supabase.co/auth/v1/user',async route=>{
+      const req=route.request();
+      if(req.method()==='GET'){
+        validationCalls++;
+        expect(req.headers().authorization).toBe('Bearer fake-recovery-access-token');
+        await route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({id:'fake-synthetic-user',email:'synthetic.qa@example.test'})});
+      }else if(req.method()==='PUT'){
+        updateCalls++;
+        validPayload=req.headers().authorization==='Bearer fake-recovery-access-token'&&
+          req.postDataJSON().password==='Synthetic_only_password_1234!';
+        await route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({id:'fake-synthetic-user'})});
+      }else await route.fulfill({status:405,body:'Not allowed'});
+    });
+    await page.goto('http://127.0.0.1:4173/#access_token=fake-recovery-access-token&refresh_token=fake-refresh&type=recovery');
+    await expect(page.locator('#recoveryPanel')).toBeVisible();
+    await expect(page.locator('#authPanel')).toBeHidden();
+    expect(new URL(page.url()).hash).toBe('');
+    expect(validationCalls).toBe(1);
+    expect(updateCalls).toBe(0);
+    await page.locator('#new-password').fill('Synthetic_only_password_1234!');
+    await page.locator('#confirm-password').fill('Different_password_4567!');
+    await page.getByRole('button',{name:'Сохранить новый пароль'}).click();
+    await expect(page.locator('#status')).toContainText('Пароли не совпадают');
+    expect(updateCalls).toBe(0);
+    await page.locator('#confirm-password').fill('Synthetic_only_password_1234!');
+    await page.getByRole('button',{name:'Сохранить новый пароль'}).click();
+    await expect(page.locator('#status')).toContainText('Новый пароль сохранён');
+    await expect(page.locator('#recoveryPanel')).toBeHidden();
+    await expect(page.locator('#authPanel')).toBeVisible();
+    expect(updateCalls).toBe(1);
+    expect(validPayload).toBe(true);
+    const stored=await page.evaluate(()=>sessionStorage.getItem('pae04_qa_session_v1'));
+    expect(stored).toBeNull();
+  }finally{await context.close()}
+});
+
+test('PAE-04 password recovery: expired synthetic link cannot set a password',async ({browser})=>{
+  const context=await browser.newContext({viewport:{width:320,height:700},
+    storageState:{cookies:[],origins:[]}});
+  try{
+    const page=await context.newPage();
+    await page.route('https://ulkocxmtnhxkhfgdlupw.supabase.co/auth/v1/user',async route=>
+       route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({msg:'expired token'})}));
+    await page.goto('http://127.0.0.1:4173/#access_token=fake-expired-token&type=recovery');
+    await expect(page.locator('#status')).toContainText('недействительна или просрочена');
+    await expect(page.locator('#recoveryPanel')).toBeHidden();
+    expect(new URL(page.url()).hash).toBe('');
+  }finally{await context.close()}
+});
