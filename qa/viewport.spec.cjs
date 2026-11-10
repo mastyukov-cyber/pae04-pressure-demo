@@ -189,3 +189,52 @@ for(const [name,width,height] of [
     }finally{await ctx.close()}
   });
 }
+
+
+test('PAE-04 authenticated user can request safe password change email',async({browser})=>{
+  const ctx=await browser.newContext({
+    viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ru-RU',
+    storageState:{cookies:[],origins:[]},
+  });
+  try{
+    const page=await ctx.newPage();
+    await page.addInitScript(()=>{
+      sessionStorage.setItem('pae04_qa_session_v1',JSON.stringify({
+        access_token:'fake-verified-session',expires_at:Math.floor(Date.now()/1000)+3600,
+        user:{id:'synthetic-user-0001',email:'synthetic.user@example.test'},
+      }));
+    });
+    await page.route('https://ulkocxmtnhxkhfgdlupw.supabase.co/auth/v1/user',async route=>{
+      expect(route.request().headers().authorization).toBe('Bearer fake-verified-session');
+      await route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({id:'synthetic-user-0001',email:'synthetic.user@example.test'})});
+    });
+    await page.route('https://ulkocxmtnhxkhfgdlupw.supabase.co/rest/v1/**',route=>
+      route.fulfill({status:200,contentType:'application/json',body:'[]'}));
+    let requestCount=0,requestBodyValid=false;
+    await page.route('https://ulkocxmtnhxkhfgdlupw.supabase.co/auth/v1/recover?**',async route=>{
+      requestCount++;
+      const r=route.request(),body=r.postDataJSON();
+      requestBodyValid=r.method()==='POST'&&body.email==='synthetic.user@example.test'&&
+        Object.keys(body).join(',')==='email';
+      await route.fulfill({status:200,contentType:'application/json',body:'{}'});
+    });
+    await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+    await expect(page.locator('#change-password')).toBeVisible();
+    await expect(page.locator('#authFields')).toBeHidden();
+    await expect(page.locator('#forgot')).toBeHidden();
+    await expect(page.locator('#logout')).toBeVisible();
+    await expect(page.locator('#formPanel')).toBeVisible();
+    const before=await page.evaluate(()=>({
+      width:document.documentElement.scrollWidth,
+      viewport:window.innerWidth,
+    }));
+    expect(before.width).toBeLessThanOrEqual(before.viewport+1);
+    expect(requestCount).toBe(0);
+    await page.locator('#change-password').click();
+    await expect(page.locator('#status')).toContainText('Если тестовый аккаунт существует');
+    expect(requestCount).toBe(1);
+    expect(requestBodyValid).toBe(true);
+    await expect(page.locator('#formPanel')).toBeVisible();
+  }finally{await ctx.close()}
+});
