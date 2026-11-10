@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>HEALTH TRACKER — демонстрация диагностики</title>
+<style>
+:root{color-scheme:light dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;background:#f5f7fa;color:#17253b}
+@media(prefers-color-scheme:dark){:root{background:#101823;color:#f4f6fa}}
+*{box-sizing:border-box}
+html,body{width:100%;max-width:100%;margin:0;overflow-x:clip}
+main{width:100%;max-width:460px;margin:auto;padding:24px 16px 60px}
+header{font-size:13px;font-weight:800;letter-spacing:.08em;color:#3587d4;margin-bottom:18px}
+h1{font-size:25px;line-height:1.2;margin:0 0 8px}
+h2{font-size:17px;margin:0 0 14px}
+p{line-height:1.5;margin:0 0 14px}
+.muted{color:#607080;font-size:13px}
+.panel{background:#fff;color:#17253b;border-radius:20px;padding:18px;margin:16px 0;box-shadow:0 4px 22px #112b5610;max-width:100%;min-width:0}
+.notice{background:#e8eff9;color:#295b8c;border-radius:12px;padding:14px;font-size:13px;margin:14px 0;line-height:1.5}
+.choice{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #e4ebf1}
+.choice:last-child{border-bottom:0}
+input{font-size:16px}
+input[type=radio],input[type=checkbox]{min-width:20px;width:20px;height:20px;accent-color:#2377ce;flex-shrink:0}
+label{cursor:pointer}
+label strong{display:block;margin-bottom:4px}
+label small{display:block;color:#607080;line-height:1.4}
+button{border:0;background:#2778c9;color:#fff;font-size:16px;font-weight:700;border-radius:13px;padding:13px 15px;min-height:44px;width:100%;cursor:pointer}
+button.secondary{background:#e9f0f9;color:#285e94;margin-top:8px}
+button:disabled{opacity:.5;cursor:not-allowed}
+pre{background:#eff3f8;color:#18344c;border-radius:10px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11.5px;line-height:1.5;max-width:100%;overflow-x:auto}
+#result{padding:12px;border-radius:10px;background:#ecf4fb;color:#285d90;font-size:13px;line-height:1.5}
+#result.success{background:#e4f6ec;color:#14603f}
+#result.error{background:#fff0eb;color:#9b3a29}
+[hidden]{display:none!important}
+@media(prefers-color-scheme:dark){.panel{background:#1d2b3b;color:#f4f6fa}.choice{border-color:#354456}label small,.muted{color:#adbbca}pre{background:#121e2c;color:#d9e8f5}}
+</style>
+</head>
+<body>
+<main>
+<header>HEALTH TRACKER · PAE-04</header>
+<h1>Настройки диагностики</h1>
+<p class="muted">Безопасная демонстрация. Ничего не отправляется, не сохраняется и не меняется в приложении.</p>
+<div class="notice"><strong>ТЕСТОВЫЙ ЭКРАН</strong> · Здесь нельзя подключить облачную отправку. Экран показывает только пример того, как будет работать согласие.</div>
+<section class="panel" aria-labelledby="modeTitle">
+<h2 id="modeTitle">Режим сбора</h2>
+<div class="choice">
+<input type="radio" id="off" name="mode" value="off" checked>
+<label for="off"><strong>Выключена</strong><small>Дополнительные технические события не отправляются.</small></label>
+</div>
+<div class="choice">
+<input type="radio" id="basic" name="mode" value="basic">
+<label for="basic"><strong>Базовая</strong><small>Только фиксированный код ошибки, компонент и версия. Без идентификатора телефона.</small></label>
+</div>
+<div class="choice">
+<input type="radio" id="verbose" name="mode" value="verbose">
+<label for="verbose"><strong>Расширенная QA</strong><small>Ошибки, результаты технических действий, время выполнения, среда Safari и случайный ID тестовой установки. Только синтетические данные.</small></label>
+</div>
+</section>
+<section class="panel" aria-labelledby="previewTitle">
+<h2 id="previewTitle">Что будет отправлено</h2>
+<p class="muted">Пример с полностью вымышленными значениями. Ниже отображаются точные названия полей.</p>
+<pre id="preview" aria-label="Пример технического события">Ничего не отправляется</pre>
+</section>
+<section class="panel" id="consentPanel" hidden aria-labelledby="consentTitle">
+<h2 id="consentTitle">Подтверждение</h2>
+<p class="muted">Диагностика добровольная. Cloudflare получает сетевые метаданные. Срок хранения событий Analytics Engine — до трёх месяцев. Отключение прекращает будущую отправку, но не удаляет старые события мгновенно.</p>
+<div class="choice"><input id="consent" type="checkbox"><label for="consent"><strong>Я согласен на техническую диагностику в выбранном режиме</strong><small>Я посмотрел состав демонстрационного отчёта.</small></label></div>
+<div class="choice" id="syntheticRow" hidden><input id="synthetic" type="checkbox"><label for="synthetic"><strong>Подтверждаю: только синтетические данные</strong><small>Расширенный QA нельзя применять к реальным медицинским записям.</small></label></div>
+</section>
+<section class="panel">
+<button id="apply" type="button" disabled>Применить в демонстрации</button>
+<button id="disable" type="button" class="secondary">Отключить диагностику</button>
+<p id="result" role="status" aria-live="polite">Диагностика выключена. Сеть не используется.</p>
+</section>
+<footer class="muted">PAE-04 · Демонстрация интерфейса, а не рабочий сбор логов. Cloudflare, Supabase и Obsidian не подключены.</footer>
+</main>
+<script type="module" src="./demo.mjs"></script>
+</body>
+</html>
