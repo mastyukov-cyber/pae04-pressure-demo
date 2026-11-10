@@ -36,7 +36,14 @@ footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
 <h2>Тестовая авторизация Supabase</h2>
 <div class="field"><label for="email">Тестовая почта</label><input id="email" type="email" autocomplete="username" placeholder="Тестовый адрес электронной почты"></div>
 <div class="field"><label for="password">Пароль тестового аккаунта (минимум 8 символов)</label><input id="password" type="password" autocomplete="current-password" minlength="8"></div>
-<div class="btnrow"><button id="login">Войти</button><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="logout" class="secondary" hidden>Выйти</button></div>
+<div class="btnrow"><button id="login">Войти</button><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="forgot" class="secondary small" type="button">Забыли пароль?</button><button id="logout" class="secondary" hidden>Выйти</button></div>
+</section>
+<section class="panel" id="recoveryPanel" hidden>
+<h2>Установить новый пароль</h2>
+<p class="sub">Только для подтверждённого тестового аккаунта после перехода по ссылке из письма.</p>
+<div class="field"><label for="new-password">Новый пароль (не менее 12 символов)</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128"></div>
+<div class="field"><label for="confirm-password">Повторите новый пароль</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="12" maxlength="128"></div>
+<div class="btnrow"><button id="update-password" type="button">Сохранить новый пароль</button></div>
 </section>
 <div id="who">Не авторизован. Данные недоступны.</div>
 <div id="status" role="status" aria-live="polite">Для проверки двух пользователей используйте два отдельных тестовых аккаунта.</div>
@@ -56,6 +63,8 @@ footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
 const API_BASE="https://ulkocxmtnhxkhfgdlupw.supabase.co";
 const PUBLIC_KEY="sb_publishable_Jwj_XMEsqpQ84A0JEaI_eg_Uxju1m1x";
 const TABLE="pae04_qa_pressure_entries";
+const RECOVERY_REDIRECT="https://mastyukov-cyber.github.io/pae04-pressure-demo/";
+let recoveryAccessToken=null;
 const $=id=>document.getElementById(id);
 let session=null;
 function status(msg,kind){const e=$("status");e.textContent=msg;e.className=kind||""}
@@ -98,6 +107,69 @@ async function saveEntry(){
  await listEntries();
  }catch(e){status("Ошибка сохранения: "+e.message,"error")}
 }
+async function requestPasswordRecovery(){
+ const email=$("email").value.trim();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){status("Введите адрес почты уже созданного тестового аккаунта.","error");return;}
+ $("forgot").disabled=true;
+ try{
+   await request("/auth/v1/recover?redirect_to="+encodeURIComponent(RECOVERY_REDIRECT),"POST",{email},false);
+   status("Если тестовый аккаунт существует, письмо для восстановления отправлено. Откройте его на iPhone.","success");
+ }catch(e){status("Ошибка запроса восстановления: "+e.message,"error")}
+ finally{$("forgot").disabled=false}
+}
+async function handleRecoveryRedirect(){
+ const fragment=window.location.hash;
+ if(!fragment||!(fragment.includes("type=")||fragment.includes("error=")))return;
+ const params=new URLSearchParams(fragment.slice(1));
+ // Discard the one-time URL credentials before any asynchronous request.
+ try{window.history.replaceState(null,document.title,window.location.pathname+window.location.search)}
+ catch{status("Не удалось очистить ссылку восстановления. Откройте сайт заново.","error");return;}
+ if(params.has("error")){status("Ссылка истекла или недействительна. Запросите новое письмо.","error");return;}
+ const kind=params.get("type");
+ if(kind==="signup"){status("Адрес подтверждён. Теперь можно войти с паролем.","success");return;}
+ if(kind!=="recovery")return;
+ const access=params.get("access_token");
+ if(!access){status("В ссылке нет действительного токена восстановления.","error");return;}
+ session=null;storageSet();showLogin();
+ try{
+   const response=await fetch(API_BASE+"/auth/v1/user",{
+     method:"GET",headers:{apikey:PUBLIC_KEY,Authorization:"Bearer "+access},
+     cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"
+   });
+   if(!response.ok)throw Error("Токен восстановления не подтверждён сервером.");
+   const user=await response.json();
+   if(!user?.id)throw Error("Сервер не подтвердил аккаунт.");
+   recoveryAccessToken=access;
+   $("authPanel").hidden=true;$("recoveryPanel").hidden=false;
+   status("Ссылка подтверждена. Придумайте новый пароль и сохраните его.","success");
+ }catch{recoveryAccessToken=null;status("Ссылка восстановления недействительна или просрочена. Запросите новую.","error")}
+}
+async function updateRecoveredPassword(){
+ if(!recoveryAccessToken){status("Сначала откройте действительную ссылку из письма.","error");return;}
+ const password=$("new-password").value,again=$("confirm-password").value;
+ if(password.length<12||password.length>128){status("Новый пароль должен содержать от 12 до 128 символов.","error");return;}
+ if(password!==again){status("Пароли не совпадают. Проверьте оба поля.","error");return;}
+ $("update-password").disabled=true;
+ try{
+   const response=await fetch(API_BASE+"/auth/v1/user",{
+     method:"PUT",headers:{apikey:PUBLIC_KEY,Authorization:"Bearer "+recoveryAccessToken,
+     "Content-Type":"application/json"},body:JSON.stringify({password}),
+     cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"
+   });
+   if(!response.ok){
+     let detail={};try{detail=await response.json()}catch{}
+     throw Error(detail.msg||detail.message||detail.error||("HTTP "+response.status));
+   }
+   recoveryAccessToken=null;
+   $("new-password").value="";$("confirm-password").value="";
+   $("recoveryPanel").hidden=true;$("authPanel").hidden=false;
+   session=null;storageSet();showLogin();$("password").value="";
+   status("Новый пароль сохранён. Теперь войдите с ним в тестовый аккаунт.","success");
+ }catch(e){status("Ошибка изменения пароля: "+e.message,"error")}
+ finally{$("update-password").disabled=false}
+}
+$("forgot").addEventListener("click",requestPasswordRecovery);
+$("update-password").addEventListener("click",updateRecoveredPassword);
 $("register").addEventListener("click",()=>auth("register"));
 $("login").addEventListener("click",()=>auth("login"));
 $("logout").addEventListener("click",signOut);
@@ -106,5 +178,6 @@ $("reload").addEventListener("click",listEntries);
 const dt=new Date();dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());$("recorded").value=dt.toISOString().slice(0,16);
 try{session=JSON.parse(sessionStorage.getItem("pae04_qa_session_v1")||"null")}catch{session=null}
 showLogin();
-if(session?.access_token){request("/auth/v1/user","GET",undefined,true).then(u=>{if(u.id===session.user?.id){showLogin();listEntries()}else signOut()}).catch(()=>signOut())}
+if(window.location.hash.includes("type=")||window.location.hash.includes("error=")){handleRecoveryRedirect()}
+else if(session?.access_token){request("/auth/v1/user","GET",undefined,true).then(u=>{if(u.id===session.user?.id){showLogin();listEntries()}else signOut()}).catch(()=>signOut())}
 </script></body></html>
