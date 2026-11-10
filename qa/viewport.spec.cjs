@@ -151,3 +151,41 @@ test('PAE-04 password recovery: expired synthetic link cannot set a password',as
     expect(new URL(page.url()).hash).toBe('');
   }finally{await context.close()}
 });
+
+
+for(const [name,width,height] of [
+  ['iPhone-320-focus',320,700],
+  ['iPhone-390-focus',390,844],
+]){
+  test('PAE-04 Safari editable-field focus zoom guard '+name,async({browser})=>{
+    const ctx=await browser.newContext({
+      viewport:{width,height},isMobile:true,hasTouch:true,deviceScaleFactor:3,
+      locale:'ru-RU',storageState:{cookies:[],origins:[]},
+    });
+    try{
+      const page=await ctx.newPage();
+      await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+      // The form is revealed only in synthetic browser DOM; no authentication request.
+      await page.evaluate(()=>{document.querySelector('#formPanel').hidden=false});
+      for(const selector of ['#email','#password','#pulse','#recorded']){
+        await page.locator(selector).focus();
+        const m=await page.locator(selector).evaluate(el=>{
+          const rect=el.getBoundingClientRect();
+          return {
+            fontSize:parseFloat(getComputedStyle(el).fontSize),
+            left:rect.left,right:rect.right,
+            viewport:window.innerWidth,
+            docWidth:document.documentElement.scrollWidth,
+            visualScale:window.visualViewport?.scale??1,
+          };
+        });
+        console.log('PAE04_QA_FOCUS',JSON.stringify({name,selector,...m}));
+        expect(m.fontSize,'Editable controls should not trigger iOS input zoom').toBeGreaterThanOrEqual(16);
+        expect(m.left,'Input should remain inside viewport').toBeGreaterThanOrEqual(-1);
+        expect(m.right,'Input should remain inside viewport').toBeLessThanOrEqual(width+1);
+        expect(m.docWidth,'Document should not overflow on focus').toBeLessThanOrEqual(width+1);
+        expect(m.visualScale,'Emulated visual scale should stay at 1').toBeLessThanOrEqual(1.01);
+      }
+    }finally{await ctx.close()}
+  });
+}
