@@ -4,27 +4,29 @@
 <title>PAE-04 · Health Tracker QA</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#15243b;background:#f5f7fb;font-size:15px}
-*{box-sizing:border-box}body{margin:0}main{width:min(100%,430px);margin:auto;padding:30px 20px 65px}
-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;color:#2376c9;font-size:13px;font-weight:800;letter-spacing:.04em}
+*{box-sizing:border-box}body{margin:0;width:100%;max-width:100%;overflow-x:clip}main{width:100%;max-width:430px;min-width:0;margin:auto;padding:30px 20px 65px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;margin-bottom:28px;color:#2376c9;font-size:13px;font-weight:800;letter-spacing:.04em}header>span{min-width:0;max-width:100%;overflow-wrap:anywhere}
 .tag{background:#e0f3e9;color:#137846;padding:9px 12px;border-radius:12px;font-size:12px;letter-spacing:0}
 h1{margin:0 0 5px;font-size:29px;letter-spacing:-.8px}p.sub{color:#718097;margin:0 0 20px}
 .notice{background:#e5f0ff;color:#275c96;padding:15px;border-radius:13px;font-size:12px;margin:18px 0}
 .notice strong{display:block;margin-bottom:4px;letter-spacing:.03em}
-.panel{background:white;border-radius:21px;padding:19px 17px;box-shadow:0 4px 24px #1a376208;margin-bottom:15px}
+.panel{background:white;min-width:0;max-width:100%;border-radius:21px;padding:19px 17px;box-shadow:0 4px 24px #1a376208;margin-bottom:15px}
 h2{font-size:16px;margin:0 0 15px}label{display:block;font-size:12px;color:#687789;font-weight:600;margin:0 0 7px}
-input{width:100%;border:1px solid #dce4ef;background:#f5f7fa;border-radius:12px;padding:12px;color:#18314b;font:inherit;min-height:46px}
+input{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;border:1px solid #dce4ef;background:#f5f7fa;border-radius:12px;padding:12px;color:#18314b;font:inherit;min-height:46px}
 input:focus{outline:2px solid #85b8f4}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-.field{margin-bottom:13px}.pressure input{font-size:25px;font-weight:750}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;min-width:0}
+.field{min-width:0;max-width:100%;margin-bottom:13px}.pressure input{font-size:25px;font-weight:750}
 button{border:0;background:#2377cf;color:white;padding:14px 16px;border-radius:13px;font:inherit;font-weight:700;cursor:pointer;min-height:46px}
 button.secondary{background:#edf3fb;color:#235d95}button.small{padding:9px 11px;font-size:12px}
 button:disabled{opacity:.55;cursor:wait}
-.btnrow{display:flex;gap:9px;flex-wrap:wrap}#status{border-radius:12px;padding:12px;margin:0 0 15px;white-space:pre-wrap;font-size:13px;background:#e9eff7;color:#344b68}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;min-width:0}.btnrow button{min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal}#status{max-width:100%;min-width:0;overflow-wrap:anywhere;border-radius:12px;padding:12px;margin:0 0 15px;white-space:pre-wrap;font-size:13px;background:#e9eff7;color:#344b68}
 #status.error{background:#fff0ed;color:#a2352c}#status.success{background:#e5f6eb;color:#14653a}
 #who{font-size:12px;color:#5b6b82;overflow-wrap:anywhere;margin:0 0 15px}
 #entries{padding-left:18px;color:#344760;font-size:13px}#entries li{margin:9px 0}
 footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
 [hidden]{display:none!important}
+/* iOS narrow-viewport QA: allow grid tracks, inputs, and buttons to shrink. */
+@media(max-width:380px){main{padding:22px 12px 48px}.panel{padding:16px 14px}.pressure input{font-size:20px}.btnrow button{flex:1 1 100%}}
 </style></head>
 <body><main>
 <header><span>HEALTH TRACKER</span><span class="tag">● СИНТЕТИКА</span></header>
