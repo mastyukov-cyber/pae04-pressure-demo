@@ -47,9 +47,9 @@ footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
 <div class="notice"><strong>PAE-04 · ТЕСТОВАЯ ПЕСОЧНИЦА</strong>Вводите только вымышленные показатели. Никаких реальных медицинских сведений.</div>
 <section class="panel" id="authPanel">
 <h2>Тестовая авторизация Supabase</h2>
-<div class="field"><label for="email">Тестовая почта</label><input id="email" type="email" autocomplete="username" placeholder="Тестовый адрес электронной почты"></div>
-<div class="field"><label for="password">Пароль тестового аккаунта (минимум 8 символов)</label><input id="password" type="password" autocomplete="current-password" minlength="8"></div>
-<div class="btnrow"><button id="login">Войти</button><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="forgot" class="secondary small" type="button">Забыли пароль?</button><button id="logout" class="secondary" hidden>Выйти</button></div>
+<div id="authFields"><div class="field"><label for="email">Тестовая почта</label><input id="email" type="email" autocomplete="username" placeholder="Тестовый адрес электронной почты"></div>
+<div class="field"><label for="password">Пароль тестового аккаунта (минимум 8 символов)</label><input id="password" type="password" autocomplete="current-password" minlength="8"></div></div>
+<div class="btnrow"><button id="login">Войти</button><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="forgot" class="secondary small" type="button">Забыли пароль?</button><button id="change-password" class="secondary small" type="button" hidden>Сменить пароль</button><button id="logout" class="secondary" hidden>Выйти</button></div>
 </section>
 <section class="panel" id="recoveryPanel" hidden>
 <h2>Установить новый пароль</h2>
@@ -81,7 +81,7 @@ let recoveryAccessToken=null;
 const $=id=>document.getElementById(id);
 let session=null;
 function status(msg,kind){const e=$("status");e.textContent=msg;e.className=kind||""}
-function showLogin(){const yes=!!(session&&session.access_token&&session.user);$("login").hidden=yes;$("register").hidden=yes;$("logout").hidden=!yes;$("formPanel").hidden=!yes;$("historyPanel").hidden=!yes;$("who").textContent=yes?"Тестовый аккаунт: "+session.user.email+" · "+session.user.id:"Не авторизован. Данные недоступны.";if(!yes)$("entries").replaceChildren();}
+function showLogin(){const yes=!!(session&&session.access_token&&session.user);$("login").hidden=yes;$("register").hidden=yes;$("authFields").hidden=yes;$("forgot").hidden=yes;$("change-password").hidden=!yes;$("logout").hidden=!yes;$("formPanel").hidden=!yes;$("historyPanel").hidden=!yes;$("who").textContent=yes?"Тестовый аккаунт: "+session.user.email+" · "+session.user.id:"Не авторизован. Данные недоступны.";if(!yes)$("entries").replaceChildren();}
 function storageSet(){if(session)sessionStorage.setItem("pae04_qa_session_v1",JSON.stringify(session));else sessionStorage.removeItem("pae04_qa_session_v1")}
 async function request(path,method,body,protectedRequest){const headers={"apikey":PUBLIC_KEY};if(body!==undefined)headers["Content-Type"]="application/json";if(protectedRequest){if(!session?.access_token)throw Error("Сначала войдите в тестовый аккаунт");headers.Authorization="Bearer "+session.access_token;}
  const r=await fetch(API_BASE+path,{method:method||"GET",headers,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store",credentials:"omit"});
@@ -120,15 +120,15 @@ async function saveEntry(){
  await listEntries();
  }catch(e){status("Ошибка сохранения: "+e.message,"error")}
 }
-async function requestPasswordRecovery(){
- const email=$("email").value.trim();
+async function requestPasswordRecovery(emailOverride){
+ const email=(typeof emailOverride==="string"?emailOverride:$("email").value).trim();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){status("Введите адрес почты уже созданного тестового аккаунта.","error");return;}
- $("forgot").disabled=true;
+ $("forgot").disabled=true;$("change-password").disabled=true;
  try{
    await request("/auth/v1/recover?redirect_to="+encodeURIComponent(RECOVERY_REDIRECT),"POST",{email},false);
    status("Если тестовый аккаунт существует, письмо для восстановления отправлено. Откройте его на iPhone.","success");
  }catch(e){status("Ошибка запроса восстановления: "+e.message,"error")}
- finally{$("forgot").disabled=false}
+ finally{$("forgot").disabled=false;$("change-password").disabled=false}
 }
 async function handleRecoveryRedirect(){
  const fragment=window.location.hash;
@@ -181,7 +181,8 @@ async function updateRecoveredPassword(){
  }catch(e){status("Ошибка изменения пароля: "+e.message,"error")}
  finally{$("update-password").disabled=false}
 }
-$("forgot").addEventListener("click",requestPasswordRecovery);
+$("forgot").addEventListener("click",()=>requestPasswordRecovery());
+$("change-password").addEventListener("click",()=>requestPasswordRecovery(session?.user?.email||""));
 $("update-password").addEventListener("click",updateRecoveredPassword);
 $("register").addEventListener("click",()=>auth("register"));
 $("login").addEventListener("click",()=>auth("login"));

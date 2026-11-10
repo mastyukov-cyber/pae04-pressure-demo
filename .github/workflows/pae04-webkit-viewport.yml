@@ -4,6 +4,7 @@ on:
     branches:
       - sandbox/pae04-ios-responsive-auth-diagnostics-v01
       - sandbox/pae04-password-recovery-ui-v01
+      - sandbox/pae04-ios-focus-zoom-fix-v02
     paths:
       - index.html
       - qa/**
