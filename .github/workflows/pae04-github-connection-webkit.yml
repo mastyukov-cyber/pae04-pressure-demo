@@ -1,0 +1,52 @@
+name: PAE-04 GitHub connectivity page (synthetic iPhone WebKit)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'diagnostics/connection/**'
+      - 'qa/connection-*'
+      - 'qa/connection.spec.cjs'
+      - 'playwright-connection.config.cjs'
+      - '.github/workflows/pae04-github-connection-webkit.yml'
+permissions:
+  contents: read
+concurrency:
+  group: pae04-github-connection-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  synthetic-ios-webkit:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout isolated synthetic test code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify browser JavaScript and test syntax
+        run: |
+          node --check diagnostics/connection/check.mjs
+          node --check diagnostics/connection/app.mjs
+          node --check qa/connection-check.test.mjs
+          node --check qa/connection.spec.cjs
+          node --check qa/connection-server.cjs
+      - name: Run no-network privacy and response classification unit tests
+        run: node --test qa/connection-check.test.mjs
+      - name: Install pinned WebKit QA runner
+        run: npm install --no-save --no-audit --no-fund @playwright/test@1.65.0
+      - name: Install Safari-equivalent WebKit browser
+        run: npx playwright install --with-deps webkit
+      - name: Test iPhone layouts and synthetic network error states
+        run: npx playwright test -c playwright-connection.config.cjs --reporter=line
+      - name: Upload synthetic failure artifacts only
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pae04-github-connection-synthetic-webkit-failures
+          path: connection-test-results/
+          retention-days: 3
+          if-no-files-found: ignore
