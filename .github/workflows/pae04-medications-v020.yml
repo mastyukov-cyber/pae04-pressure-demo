@@ -1,0 +1,48 @@
+name: PAE-04 MEDICATIONS v0.2.0 synthetic preview QA
+on:
+  push:
+    branches:
+      - sandbox/pae04-medications-ui-v020
+    paths:
+      - 'preview/medications-v020/**'
+      - 'qa/medications-v020/**'
+      - '.github/workflows/pae04-medications-v020.yml'
+permissions:
+  contents: read
+jobs:
+  medications-v020:
+    name: Model + static + iPhone WebKit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout isolated preview branch
+        uses: actions/checkout@v4
+      - name: Select Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check preview/medications-v020/meds-model.mjs
+          node --check preview/medications-v020/app.mjs
+          node --check preview/medications-v020/sw.js
+          node --check qa/medications-v020/serve.cjs
+          node --check qa/medications-v020/preview.spec.cjs
+      - name: Run 12 synthetic model checks
+        run: node qa/medications-v020/model-contract.mjs
+      - name: Run 18 static safety/UX checks
+        run: node qa/medications-v020/static-contract.mjs
+      - name: Install pinned browser QA package
+        run: npm install --no-save --no-audit --no-fund @playwright/test@1.65.0
+      - name: Install WebKit on disposable GitHub runner
+        run: npx playwright install --with-deps webkit
+      - name: Run 8 single-worker iPhone WebKit smoke tests
+        run: npx playwright test --config=qa/medications-v020/playwright.config.cjs
+      - name: Upload anonymous failure screenshots only
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pae04-v020-synthetic-webkit-failures
+          path: test-results/medications-v020/
+          if-no-files-found: ignore
+          retention-days: 3
