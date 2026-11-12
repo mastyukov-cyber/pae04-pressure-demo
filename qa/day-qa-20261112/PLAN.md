@@ -11,7 +11,7 @@ Validate the iPhone PWA's mobile UX, Face ID/password autofill, sessions and syn
 - Repo: mastyukov-cyber/pae04-pressure-demo
 - Baseline main commit: d36cb10df5992e1a27931fa5968ffc809a1aa545
 - Daytime window: Thursday 2026-11-12, 13:30–20:30 Moscow time, launch requires separate authorization.
-- Total planned duration: 150 minutes. Max one iPhone Simulator. Physical iPhone is used for hands-on Face ID verification.
+- Total planned duration: 210 minutes (150 minutes original PWA checks + 60 minutes synthetic medication module). Max one iPhone Simulator. Physical iPhone is used for hands-on Face ID verification.
 - Automatic static checker: qa/day-qa-20261112/static-contract.mjs. Node.js 20+, built-in libraries only. Reads index.html, makes no network requests and writes no files. It cannot prove runtime Face ID behavior or Supabase RLS.
 - No actual medical data, no change to Obsidian Vault, production data, GitHub main, app settings, device settings, or unrelated projects.
 - No automatic creation of test accounts, no automatic Supabase record insert/delete, no external collection of screenshots or credentials.
@@ -23,7 +23,7 @@ Optional full Mac WebKit/simulator run: 150 min, CPU average 10–30%, possible 
 
 STOP: Ctrl+C or stop the approved runner. Confirm it exited and produce a cancellation marker. Never delete logs automatically; no main/Vault rollback should be necessary because those are out of scope. Immediately abort if a forbidden path is accessed, tokens appear in logs, the user cancels, or the environment is not isolated. Show the full resource passport and remote-access warning before any later Mac command.
 
-## Scenario matrix — 30 tests, 150 minutes
+## Scenario matrix — 42 tests, 210 minutes
 
 ### A — Preflight (15 min)
 A01 Verify actual version and source build are PD-20261112.1; stop on mismatch.
@@ -67,15 +67,38 @@ E28 Inspect sanitized console / QA logs for secrets, unexpected requests and Vau
 F29 PASS/FAIL/PARTIAL/BLOCKED table for all scenarios; include build, environment, error text and measured resources, redact all identifiers.
 F30 Verify runner stopped, Mac settings unchanged, no unexpected work; check only approved technical Dropbox logs and note rollback path.
 
+### G — Synthetic medications module (60 min, isolated QA model ONLY)
+
+Important: the public v0.1.1 pressure demo does not yet contain a medication module. M01–M12 test a NEW isolated in-memory QA model with invented medicine names, NOT a completed feature of the deployed iPhone app. No genuine medication names, doses or prescriptions are used, and no notifications or reminders are created.
+
+- M01 Add an invented medication from the synthetic catalog.
+- M02 Add an invented medication manually.
+- M03 Permanent regimen appears in planned-day list.
+- M04 Course regimen appears only inside its selected start/end dates.
+- M05 Refuse a course intake outside its date range.
+- M06 As-needed medication does not appear as a scheduled dose.
+- M07 As-needed intake can be marked manually.
+- M08 Taken checkmark can be cleared.
+- M09 Repeated marking of the same daily medication does not create duplicates.
+- M10 Medication export has no blood-pressure records (separate modules).
+- M11 Synthetic backup/export and reimport retain the medicines and checkmarks.
+- M12 A backup from one fictional user is rejected for a different fictional user; model exposes no reminder/notification function.
+
+Scripts:
+- qa/day-qa-20261112/meds-fixture.mjs — pure in-memory, offline synthetic medicine model; accepts only names beginning Тестовый препарат.
+- qa/day-qa-20261112/meds-contract.mjs — 12 automatic Node.js contract tests, no network and no disk/database writes.
+
+User-visible iPhone medication UI, persistence integration, actual catalog service, multi-dose daily scheduling and live Supabase RLS remain **NOT IMPLEMENTED / NOT TESTED**. They require separate implementation and QA approval, and do not inherit a PASS from these 12 model tests.
+
 ## Gates and acceptance criteria
 
 By default, D22, D23, E26, E27 are BLOCKED until explicit permissions and TEST environment verification; do not silently mark as PASS. Any exposure of medical data, secrets, unauthorized write or cross-account leak is FAIL with immediate stop.
 
-Full PASS requires evidence for each executed scenario and no critical security defects. PARTIAL for cancellation, missing physical iPhone verification or incomplete run. BLOCKED for missing permission, uncertain sandbox path, unavailable tools or unexpected environment. Failed checks are not auto-fixed in main.
+Full PASS requires evidence for each executed scenario and no critical security defects. Keep separate result categories: pressure PWA runtime, static contract (30 checks), medications isolated model (12 tests), and actual iPhone medication UI (NOT IMPLEMENTED). Never combine model test PASS into an application feature PASS. PARTIAL for cancellation, missing physical iPhone verification or incomplete run. BLOCKED for missing permission, uncertain sandbox path, unavailable tools or unexpected environment. Failed checks are not auto-fixed in main.
 
 ## Output paths
 
 Report prefix PAE04-DAY-QA-20261112- with SUMMARY.json, EVENTS.jsonl and redacted screenshots if approved.
 Proposed logical Dropbox folder: /PERSONAL AI ECOSYSTEM/Health Tracker/03_Test_Reports/ . First confirm it is a registered, authorized sync location; NEVER guess a full iMac path. Read the delivered logs through Dropbox before reporting delivery PASS.
 
-No automatic Work/Codex handoff is needed for preparation. Mac execution and new Supabase writes must be approved separately.
+No automatic Work/Codex handoff is needed for preparation. Mac execution and new Supabase writes must be approved separately. Medication module implementation in the published application requires a separate authorized release.
