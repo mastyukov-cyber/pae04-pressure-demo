@@ -20,11 +20,11 @@ module.exports = defineConfig({
     serviceWorkers: "allow"
   },
   webServer: {
-    command: "node qa/medications-v020/serve.cjs",
+    command: "node serve.cjs",
     url: "http://127.0.0.1:4173/preview/medications-v020/",
     reuseExistingServer: false,
     timeout: 20000
   },
-  outputDir: "test-results/medications-v020",
+  outputDir: "../../test-results/medications-v020",
   reporter: [["line"]]
 });
