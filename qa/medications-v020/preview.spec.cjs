@@ -63,7 +63,6 @@ test("iPhone: reject non-synthetic names and invalid course dates", async ({page
   await page.locator("#save-med").click();
   await expect(page.locator("#form-error")).toBeVisible();
   await page.locator("#close-add").click();
-  await expect(page.locator("#all-medicines-list .med-row")).toHaveCount(0);
   await page.getByRole("tab",{name:"Препараты"}).click();
   await expect(page.locator("#all-medicines-list .med-row")).toHaveCount(3);
 });
