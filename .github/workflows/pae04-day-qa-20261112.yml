@@ -1,0 +1,26 @@
+name: PAE-04 DAY QA 42 (synthetic offline)
+on:
+  push:
+    branches:
+      - sandbox/pae04-day-qa-20261112-v01
+    paths:
+      - 'qa/day-qa-20261112/**'
+      - '.github/workflows/pae04-day-qa-20261112.yml'
+permissions:
+  contents: read
+jobs:
+  qa-static-medications:
+    name: Read-only static + synthetic medications
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout synthetic QA sandbox
+        uses: actions/checkout@v4
+      - name: Runtime versions
+        run: |
+          node --version
+          echo 'PAE-04 offline synthetic QA, no Supabase, no data writes'
+      - name: Run 30 read-only static contracts
+        run: node qa/day-qa-20261112/static-contract.mjs
+      - name: Run 12 synthetic medication model contracts
+        run: node qa/day-qa-20261112/meds-contract.mjs
