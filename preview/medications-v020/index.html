@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; worker-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>HEALTH TRACKER · Лекарства v0.2.0 TEST</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="brand">
+      <div><span class="brand-logo" aria-hidden="true">✚</span> HEALTH TRACKER</div>
+      <span class="test-pill">● СИНТЕТИКА</span>
+    </header>
+    <p class="build" id="pae04-build" data-version="0.2.0" data-build="MT-20261112.1">v0.2.0 TEST · сборка MT-20261112.1</p>
+
+    <main>
+      <div class="hero">
+        <div>
+          <p class="eyebrow">МОДУЛЬ 02 / ТЕСТОВЫЙ ПРОТОТИП</p>
+          <h1>Лекарства</h1>
+          <p class="subtitle">Отмечайте приём одним касанием</p>
+        </div>
+        <button type="button" class="primary add-main" id="open-add">+ Добавить</button>
+      </div>
+
+      <aside class="notice" role="note"><strong>Только тестовые данные.</strong>
+        Используйте исключительно вымышленные названия. Здесь нет реальных назначений, дозировок, напоминаний или связи с Supabase.
+      </aside>
+
+      <nav class="tabs" aria-label="Разделы лекарств" role="tablist">
+        <button type="button" id="tab-today" class="tab selected" role="tab" aria-selected="true" aria-controls="view-today" data-tab="today">Сегодня</button>
+        <button type="button" id="tab-medicines" class="tab" role="tab" aria-selected="false" aria-controls="view-medicines" data-tab="medicines">Препараты</button>
+        <button type="button" id="tab-history" class="tab" role="tab" aria-selected="false" aria-controls="view-history" data-tab="history">История</button>
+      </nav>
+
+      <p id="app-status" class="status" role="status" aria-live="polite">Подготовка синтетических записей…</p>
+
+      <section id="view-today" role="tabpanel" aria-labelledby="tab-today">
+        <div class="date-toolbar">
+          <label for="day">Дата приёма</label>
+          <div class="date-controls">
+            <input type="date" id="day" aria-label="Дата приёма">
+            <button type="button" class="secondary" id="jump-today">Сегодня</button>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span id="count-done" class="big">0</span><span class="stat-label">Отмечено</span></div>
+          <div class="stat"><span id="count-planned" class="big">0</span><span class="stat-label">Постоянных и курсовых</span></div>
+        </div>
+        <div class="section-heading"><h2>По плану</h2><span>Без напоминаний</span></div>
+        <ul id="planned-list" class="med-list" aria-label="Постоянные и курсовые препараты"></ul>
+        <div class="section-heading"><h2>По необходимости</h2><span>Ситуативные</span></div>
+        <ul id="asneeded-list" class="med-list" aria-label="Ситуативные препараты"></ul>
+      </section>
+
+      <section id="view-medicines" role="tabpanel" aria-labelledby="tab-medicines" hidden>
+        <div class="section-heading"><h2>Мои тестовые препараты</h2><span id="medicines-count"></span></div>
+        <ul id="all-medicines-list" class="med-list" aria-label="Список тестовых препаратов"></ul>
+        <button type="button" class="secondary wide" id="open-add-secondary">+ Добавить тестовый препарат</button>
+      </section>
+
+      <section id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+        <div class="section-heading"><h2>История отметок</h2><span>Только выполненные</span></div>
+        <ul id="history-list" class="med-list" aria-label="История приёмов"></ul>
+      </section>
+
+      <section class="utility" aria-label="Техническое управление тестовой песочницей">
+        <h2>Тестовая песочница</h2>
+        <p>Синтетические данные сохраняются только в этом браузере. Без аккаунта и отправки на сервер.</p>
+        <div class="utility-buttons">
+          <button type="button" class="secondary" id="download-backup">Экспорт JSON</button>
+          <button type="button" class="destructive" id="reset-data">Очистить тестовые данные</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>PAE-04 · MEDICATIONS PREVIEW v0.2.0 · Только синтетика. Основное приложение и журнал давления не изменены.</footer>
+  </div>
+
+  <dialog id="add-dialog" aria-labelledby="dialog-title">
+    <div class="sheet-head">
+      <button type="button" class="secondary small" id="close-add">Отмена</button>
+      <strong id="dialog-title">Новый препарат</strong>
+      <button type="submit" class="primary small" id="save-med" form="med-form">Добавить</button>
+    </div>
+    <form id="med-form" autocomplete="off">
+      <p class="dialog-note">Только вымышленные тестовые названия. Не вводите реальные препараты.</p>
+      <div class="field">
+        <label for="med-source">Способ добавления</label>
+        <select id="med-source">
+          <option value="catalog">Из тестового справочника</option>
+          <option value="manual">Вручную</option>
+        </select>
+      </div>
+      <div class="field" id="catalog-field">
+        <label for="med-catalog">Тестовый справочник</label>
+        <select id="med-catalog">
+          <option value="QA-CAT-A">Тестовый препарат А</option>
+          <option value="QA-CAT-B">Тестовый препарат Б</option>
+        </select>
+      </div>
+      <div class="field" id="manual-field" hidden>
+        <label for="med-name">Название</label>
+        <input id="med-name" type="text" maxlength="60" placeholder="Тестовый препарат В" autocomplete="off" spellcheck="false">
+        <small>Название должно начинаться с «Тестовый препарат».</small>
+      </div>
+      <div class="field">
+        <label for="med-type">Тип приёма</label>
+        <select id="med-type">
+          <option value="permanent">Постоянный</option>
+          <option value="course">Курс</option>
+          <option value="as_needed">По необходимости</option>
+        </select>
+      </div>
+      <div id="course-fields" class="two-fields" hidden>
+        <div class="field"><label for="med-start">Начало курса</label><input type="date" id="med-start"></div>
+        <div class="field"><label for="med-end">Конец курса</label><input type="date" id="med-end"></div>
+      </div>
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+    </form>
+  </dialog>
+</body>
+</html>
