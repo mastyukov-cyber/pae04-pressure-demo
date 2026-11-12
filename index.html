@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>PAE-04 · Pressure Demo v0.1.0 TEST</title>
+<title>PAE-04 · Pressure Demo v0.1.1 TEST</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#15243b;background:#f5f7fb;font-size:15px}
 *{box-sizing:border-box}body{margin:0;width:100%;max-width:100%;overflow-x:clip}main{width:100%;max-width:430px;min-width:0;margin:auto;padding:30px 20px 65px}
@@ -11,7 +11,7 @@ h1{margin:0 0 5px;font-size:29px;letter-spacing:-.8px}p.sub{color:#718097;margin
 .notice{background:#e5f0ff;color:#275c96;padding:15px;border-radius:13px;font-size:12px;margin:18px 0}
 .notice strong{display:block;margin-bottom:4px;letter-spacing:.03em}
 .panel{background:white;min-width:0;max-width:100%;border-radius:21px;padding:19px 17px;box-shadow:0 4px 24px #1a376208;margin-bottom:15px}
-h2{font-size:16px;margin:0 0 15px}label{display:block;font-size:12px;color:#687789;font-weight:600;margin:0 0 7px}
+h2{font-size:16px;margin:0 0 15px}.auth-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}.auth-title-row h2{margin:0;min-width:0}.auth-title-row #login{flex:none;white-space:nowrap}label{display:block;font-size:12px;color:#687789;font-weight:600;margin:0 0 7px}
 input{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;border:1px solid #dce4ef;background:#f5f7fa;border-radius:12px;padding:12px;color:#18314b;font:inherit;min-height:46px}
 input:focus{outline:2px solid #85b8f4}
 .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;min-width:0}
@@ -43,14 +43,14 @@ footer{font-size:12px;color:#728399;line-height:1.6;margin-top:14px}
 </style></head>
 <body><main>
 <header><span>HEALTH TRACKER</span><span class="tag">● СИНТЕТИКА</span></header>
-<p id="pae04-build" data-version="0.1.0" data-build="PD-20261111.1" style="margin:0 0 12px;color:#728399;font-size:12px;font-weight:700">Pressure Demo v0.1.0 · TEST · сборка PD-20261111.1</p>
+<p id="pae04-build" data-version="0.1.1" data-build="PD-20261112.1" style="margin:0 0 12px;color:#728399;font-size:12px;font-weight:700">Pressure Demo v0.1.1 · TEST · сборка PD-20261112.1</p>
 <h1>Новое измерение</h1><p class="sub">Давление и пульс · правая рука</p>
 <div class="notice"><strong>PAE-04 · ТЕСТОВАЯ ПЕСОЧНИЦА</strong>Вводите только вымышленные показатели. Никаких реальных медицинских сведений.</div>
 <section class="panel" id="authPanel">
-<h2>Тестовая авторизация Supabase</h2>
-<div id="authFields"><div class="field"><label for="email">Тестовая почта</label><input id="email" type="email" autocomplete="username" placeholder="Тестовый адрес электронной почты"></div>
-<div class="field"><label for="password">Пароль тестового аккаунта (минимум 8 символов)</label><input id="password" type="password" autocomplete="current-password" minlength="8"></div></div>
-<div class="btnrow"><button id="login">Войти</button><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="forgot" class="secondary small" type="button">Забыли пароль?</button><button id="change-password" class="secondary small" type="button" hidden>Сменить пароль</button><button id="logout" class="secondary" hidden>Выйти</button></div>
+<div class="auth-title-row"><h2>Тестовая авторизация Supabase</h2><button id="login" type="button">Войти</button></div>
+<div id="authFields"><div class="field"><label for="email">Тестовая почта</label><input id="email" type="email" autocomplete="username" enterkeyhint="next" placeholder="Тестовый адрес электронной почты"></div>
+<div class="field"><label for="password">Пароль тестового аккаунта (минимум 8 символов)</label><input id="password" type="password" autocomplete="current-password" enterkeyhint="go" minlength="8"></div></div>
+<div class="btnrow"><button id="register" class="secondary">Создать тестовый аккаунт</button><button id="forgot" class="secondary small" type="button">Забыли пароль?</button><button id="change-password" class="secondary small" type="button" hidden>Сменить пароль</button><button id="logout" class="secondary" hidden>Выйти</button></div>
 </section>
 <section class="panel" id="recoveryPanel" hidden>
 <h2>Установить новый пароль</h2>
@@ -187,6 +187,8 @@ $("change-password").addEventListener("click",()=>requestPasswordRecovery(sessio
 $("update-password").addEventListener("click",updateRecoveredPassword);
 $("register").addEventListener("click",()=>auth("register"));
 $("login").addEventListener("click",()=>auth("login"));
+$("email").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("password").focus()}});
+$("password").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("password").blur();auth("login")}});
 $("logout").addEventListener("click",signOut);
 $("save").addEventListener("click",saveEntry);
 $("reload").addEventListener("click",listEntries);
